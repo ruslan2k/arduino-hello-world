@@ -1,26 +1,20 @@
-#include <Arduino.h>
 // Example sketch for interfacing with the DS1302 timekeeping chip.
 //
 // Copyright (c) 2009, Matt Sparks
 // All rights reserved.
 //
 // http://quadpoint.org/projects/arduino-ds1302
-#include <stdio.h>
+#include <Arduino.h>
 #include <DS1302.h>
 
-namespace {
+const int RST_PIN = 5;
+const int DAT_PIN = 6;
+const int CLK_PIN = 7;
 
-// Set the appropriate digital I/O pin connections. These are the pin
-// assignments for the Arduino as well for as the DS1302 chip. See the DS1302
-// datasheet:
-//
-//   http://datasheets.maximintegrated.com/en/ds/DS1302.pdf
-const int kCePin   = 5;  // Chip Enable
-const int kIoPin   = 6;  // Input/Output
-const int kSclkPin = 7;  // Serial Clock
+int counter = 0;
 
 // Create a DS1302 object.
-DS1302 rtc(kCePin, kIoPin, kSclkPin);
+DS1302 rtc(RST_PIN, DAT_PIN, CLK_PIN);
 
 String dayAsString(const Time::Day day) {
   switch (day) {
@@ -36,10 +30,7 @@ String dayAsString(const Time::Day day) {
 }
 
 void printTime() {
-  // Get the current time and date from the chip.
   Time t = rtc.time();
-
-  // Name the day of the week.
   const String day = dayAsString(t.day);
 
   // Format the time and date and insert into the temporary buffer.
@@ -49,13 +40,15 @@ void printTime() {
            t.yr, t.mon, t.date,
            t.hr, t.min, t.sec);
 
+  Serial.print("printTime func ");
   // Print the formatted string to serial so we can see the time.
   Serial.println(buf);
 }
 
-}  // namespace
-
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
   Serial.begin(9600);
 
   // Initialize a new chip by turning off write protection and clearing the
@@ -65,15 +58,26 @@ void setup() {
   rtc.halt(false);
 
   // Make a new time object to set the date and time.
-  // Sunday, September 22, 2013 at 01:38:50.
-  Time t(2013, 9, 22, 1, 38, 50, Time::kSunday);
+  //     YYYY MM DD - hh  mm  ss  Day of week
+  Time t(2024, 8, 17, 13, 25, 50, Time::kSaturday);
 
   // Set the time and date on the chip.
   rtc.time(t);
+
+  // Print the current time and date
+  printTime();
 }
 
 // Loop and print the time every second.
 void loop() {
+  Serial.println(counter);
   printTime();
-  delay(1000);
+
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(100);
+
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(5000);
+
+  counter++;
 }
